@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ARES I — Journey to Mars</title>
+
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&family=Cormorant:ital,wght@0,300;1,300;1,400&display=swap"
+        rel="stylesheet" />
+
+    <!-- GSAP Animation Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+    <!-- Our Stylesheet -->
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+    <!-- STAR FIELD CANVAS (background) -->
+    <canvas id="starCanvas"></canvas>
+
+    <!-- CUSTOM CURSOR -->
+    <!-- Outer ring of cursor (crosshair SVG) -->
+    <div id="cursorRing">
+        <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+            <circle cx="22" cy="22" r="20" stroke="rgba(232,100,40,0.4)" stroke-width="1" />
+            <circle cx="22" cy="22" r="13" stroke="rgba(232,100,40,0.25)" stroke-width="1" stroke-dasharray="4 4">
+                <animateTransform attributeName="transform" type="rotate" from="0 22 22" to="360 22 22" dur="8s"
+                    repeatCount="indefinite" />
+            </circle>
+            <line x1="22" y1="2" x2="22" y2="9" stroke="rgba(232,100,40,0.55)" stroke-width="1.5"
+                stroke-linecap="round" />
+            <line x1="22" y1="35" x2="22" y2="42" stroke="rgba(232,100,40,0.55)" stroke-width="1.5"
+                stroke-linecap="round" />
+            <line x1="2" y1="22" x2="9" y2="22" stroke="rgba(232,100,40,0.55)" stroke-width="1.5"
+                stroke-linecap="round" />
+            <line x1="35" y1="22" x2="42" y2="22" stroke="rgba(232,100,40,0.55)" stroke-width="1.5"
+                stroke-linecap="round" />
+        </svg>
+    </div>
+    <!-- Small glowing dot in center of cursor -->
+    <div id="cursorDot"></div>
+
+    <!-- TOP HUD BAR (always visible)-->
+    <div id="topHud">
+        <!-- Mission logo -->
+        <div class="hudLogo">ARES I</div>
+
+        <!-- Live stats in the middle -->
+        <div class="hudStatsGroup">
+            <div class="hudStat">
+                <span class="hudStatLabel">Mission Day</span>
+                <span class="hudStatValue" id="hudMissionDay">T+000</span>
+            </div>
+            <div class="hudStat">
+                <span class="hudStatLabel">Distance</span>
+                <span class="hudStatValue" id="hudDistance">0 km</span>
+            </div>
+            <div class="hudStat">
+                <span class="hudStatLabel">Velocity</span>
+                <span class="hudStatValue" id="hudVelocity">0 km/s</span>
+            </div>
+        </div>
+
+        <!-- Right side: live indicator + phase name -->
+        <div class="hudRight">
+            <div class="hudLiveDot"></div>
+            <div class="hudBadge">MISSION ACTIVE</div>
+            <div class="hudPhaseName" id="hudPhaseName">PRE-LAUNCH</div>
+        </div>
+    </div>
+
+    <!-- LEFT SIDE NAV (section buttons)-->
+    <div id="leftNav">
+        <div class="navBtn active" data-sectionindex="0">🌍<span class="navBtnTooltip">LAUNCH</span></div>
+        <div class="navBtn" data-sectionindex="1">🚀<span class="navBtnTooltip">SPACE TRAVEL</span></div>
+        <div class="navBtn" data-sectionindex="2">🔴<span class="navBtnTooltip">MARS ORBIT</span></div>
+        <div class="navBtn" data-sectionindex="3">🛬<span class="navBtnTooltip">LANDING · EDL</span></div>
+        <div class="navBtn" data-sectionindex="4">🤖<span class="navBtnTooltip">EXPLORATION</span></div>
+    </div>
+
+    <!-- RIGHT DEPTH GAUGE (journey progress bar) -->
+    <div id="rightGauge">
+        <div class="gaugeLabel">JOURNEY</div>
+        <div class="gaugeTrack">
+            <div class="gaugeFill" id="gaugeFill"></div>
+        </div>
+        <div class="gaugeKm" id="gaugeKm">0 km</div>
+    </div>
+
+
+    <!-- SECTION 0 — LAUNCH (Countdown timer + systems check + launch button) -->
+    <section class="pageSection" id="launchSection">
+        <div class="launchContent">
+
+            <!-- Small label above title -->
+            <div class="launchEyebrow fadeUp">ARES I MISSION &nbsp;·&nbsp; LAUNCH WINDOW OPEN</div>
+
+            <!-- Big hero title -->
+            <div class="heroTitle fadeUp" style="transition-delay: 0.1s">
+                <span class="heroTitleWord1">JOURNEY</span>
+                <span class="heroTitleWord2">TO MARS</span>
+            </div>
+
+            <!-- Italic subtitle -->
+            <div class="heroSubtitle fadeUp" style="transition-delay: 0.22s">
+                225 million kilometres. 7 months of void. One crimson world that may hold
+                the key to humanity's next chapter.
+            </div>
+
+            <!-- Countdown timer blocks -->
+            <div class="countdownRow fadeUp" style="transition-delay: 0.34s">
+                <div class="countdownBlock">
+                    <div class="countdownNumber" id="cdHours">00</div>
+                    <div class="countdownLabel">HOURS</div>
+                </div>
+                <div class="countdownBlock">
+                    <div class="countdownNumber" id="cdMinutes">10</div>
+                    <div class="countdownLabel">MINUTES</div>
+                </div>
+                <div class="countdownBlock">
+                    <div class="countdownNumber" id="cdSeconds">00</div>
+                    <div class="countdownLabel">SECONDS</div>
+                </div>
+                <div class="countdownBlock">
+                    <div class="countdownNumber countdownCentisecNum" id="cdCentisec">00</div>
+                    <div class="countdownLabel">CENTISEC</div>
+                </div>
+            </div>
+
+            <!-- Systems verification checklist -->
+            <div class="systemsCheck fadeUp" style="transition-delay: 0.46s">
+                <div class="systemsCheckHeader">
+                    <div class="systemsCheckTitle">▸ PRE-LAUNCH VERIFICATION</div>
+                    <div class="systemsCheckProgress" id="systemsCheckProgress">0 / 6</div>
+                </div>
+                <div class="systemsGrid" id="systemsGrid">
+                    <div class="systemItem" data-systemkey="0">
+                        <div class="systemDot"></div>PROPULSION
+                    </div>
+                    <div class="systemItem" data-systemkey="1">
+                        <div class="systemDot"></div>LIFE SUPPORT
+                    </div>
+                    <div class="systemItem" data-systemkey="2">
+                        <div class="systemDot"></div>NAVIGATION
+                    </div>
+                    <div class="systemItem" data-systemkey="3">
+                        <div class="systemDot"></div>COMMS ARRAY
+                    </div>
+                    <div class="systemItem" data-systemkey="4">
+                        <div class="systemDot"></div>HEAT SHIELD
+                    </div>
+                    <div class="systemItem" data-systemkey="5">
+                        <div class="systemDot"></div>FUEL CELLS
+                    </div>
+                </div>
+                <div class="systemsStatus" id="systemsStatus">0 / 6 SYSTEMS VERIFIED</div>
+            </div>
+
+            <!-- Launch button (disabled until all systems verified) -->
+            <button class="launchBtn fadeUp" style="transition-delay: 0.58s" id="launchBtn" disabled
+                onclick="startLaunch()">
+                ▶ &nbsp;INITIATE LAUNCH SEQUENCE
+            </button>
+        </div>
+
+        <!-- Rocket visual on the right side -->
+        <div class="rocketWrap" id="rocketWrap">
+            <div class="rocketEmoji" id="rocketEmoji">🚀</div>
+            <!-- Flame appears when launched -->
+            <div class="rocketFlame" id="rocketFlame" style="display:none"></div>
+        </div>
+    </section>
+
+
+    <!-- SECTION 1 — SPACE TRAVEL Journey timeline + hazard cards + telemetry terminal) -->
+    <section class="pageSection" id="spaceSection">
+        <div class="twoColLayout">
+
+            <!-- LEFT COLUMN -->
+            <div class="twoColLeft">
+                <!-- Section header -->
+                <div class="zoneHeader">
+                    <div class="zoneTag fadeUp">PHASE II — INTERPLANETARY CRUISE</div>
+                    <div class="zoneDepth fadeUp" style="transition-delay:.08s">7 MONTHS &nbsp;·&nbsp; 225 MILLION KM
+                    </div>
+                    <div class="zoneName fadeUp" style="transition-delay:.14s">DEEP<br />SPACE</div>
+                    <div class="zoneDesc fadeUp" style="transition-delay:.2s">
+                        The loneliest journey in human history — six months of radiation,
+                        silence, and bone loss, with a 20-minute signal delay to Earth.
+                    </div>
+                </div>
+
+                <!-- Clickable journey milestones -->
+                <div class="journeyTimeline fadeLeft" style="transition-delay:.28s" id="journeyTimeline">
+                    <!-- Each item has data attributes; JS builds the inner HTML -->
+                    <div class="timelineItem" data-day="T+001" data-title="Earth Departure Burn"
+                        data-fact="Trans-Mars Injection accelerates to 11.2 km/s — Earth escape velocity. 70% of total fuel consumed in a single 6-minute burn.">
+                    </div>
+                    <div class="timelineItem" data-day="T+045" data-title="Asteroid Belt Crossing"
+                        data-fact="Despite Hollywood, the belt is 99.9% empty space. Average distance between asteroids: 970,000 km. No dodging required.">
+                    </div>
+                    <div class="timelineItem" data-day="T+090" data-title="Solar Radiation Peak"
+                        data-fact="Cosmic rays deliver 0.66 sieverts — 6,000× a chest X-ray. Bone density drops 1% per month in microgravity.">
+                    </div>
+                    <div class="timelineItem" data-day="T+120" data-title="Mid-Course Correction"
+                        data-fact="Tiny errors compound over millions of km. A 5-second burn calculated from 100M km away corrects the entire trajectory.">
+                    </div>
+                    <div class="timelineItem" data-day="T+180" data-title="Mars Approach"
+                        data-fact="Mars resolves from a dot to a disk. Moons Phobos and Deimos become visible. No real-time help from Earth possible.">
+                    </div>
+                    <div class="timelineItem" data-day="T+210" data-title="Orbit Insertion Burn"
+                        data-fact="Retro-rockets slow from 5.4 km/s to orbital velocity. Failure means skipping off the atmosphere — lost to deep space forever.">
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN -->
+            <div class="twoColRight">
+                <div class="sectionSmallLabel fadeUp">▸ SPACE HAZARDS — HOVER TO ANALYSE</div>
+
+                <!-- Hoverable hazard cards -->
+                <div class="hazardGrid fadeUp" style="transition-delay:.18s">
+                    <div class="hazardCard">
+                        <span class="hazardIcon">☢️</span>
+                        <span class="hazardName">Cosmic Radiation</span>
+                        <span class="hazardValue">0.66 Sv</span>
+                        <div class="hazardDesc">300× annual Earth exposure. Raises lifetime cancer risk by 5%.</div>
+                    </div>
+                    <div class="hazardCard">
+                        <span class="hazardIcon">🦴</span>
+                        <span class="hazardName">Bone Density Loss</span>
+                        <span class="hazardValue">1% /mo</span>
+                        <div class="hazardDesc">Microgravity skeletal decay. Mandatory 2.5 hrs exercise daily.</div>
+                    </div>
+                    <div class="hazardCard">
+                        <span class="hazardIcon">🌑</span>
+                        <span class="hazardName">Solar Storm CME</span>
+                        <span class="hazardValue">1 in 3</span>
+                        <div class="hazardDesc">Chance of major coronal ejection during transit. Crew shelters in
+                            shielded core.</div>
+                    </div>
+                    <div class="hazardCard">
+                        <span class="hazardIcon">⏱️</span>
+                        <span class="hazardName">Signal Delay</span>
+                        <span class="hazardValue">20 min</span>
+                        <div class="hazardDesc">One-way at max distance. Earth cannot assist during emergencies.</div>
+                    </div>
+                </div>
+
+                <!-- Mission log terminal -->
+                <div class="glassTerminal fadeUp" style="transition-delay:.3s">
+                    <div class="terminalTopBar">
+                        <div class="terminalDot terminalDotRed"></div>
+                        <div class="terminalDot terminalDotYellow"></div>
+                        <div class="terminalDot terminalDotGreen"></div>
+                        <span class="terminalTitle">MISSION_TELEMETRY.LOG</span>
+                    </div>
+                    <div class="terminalBody" id="spaceTelemetry">
+                        <div class="terminalLine" id="spaceLine1"><span class="termPrompt termPromptSys">SYS
+                                ›</span><span class="termText">Trans-Mars injection complete. ΔV: <span
+                                    class="termHighlight">+3.6 km/s</span></span></div>
+                        <div class="terminalLine" id="spaceLine2"><span class="termPrompt termPromptOk">NAV
+                                ›</span><span class="termText">Trajectory nominal. Mars ETA: <span
+                                    class="termHighlight">208 days</span></span></div>
+                        <div class="terminalLine" id="spaceLine3"><span class="termPrompt termPromptWarn">RAD
+                                ›</span><span class="termText">Cosmic ray flux: <span class="termWarn">elevated</span>.
+                                Shielding active.</span></div>
+                        <div class="terminalLine" id="spaceLine4"><span class="termPrompt termPromptOk">BIO
+                                ›</span><span class="termText">Crew vitals nominal. Exercise protocol running.</span>
+                        </div>
+                        <div class="terminalLine" id="spaceLine5"><span class="termPrompt termPromptSys">COM
+                                ›</span><span class="termText">Signal delay: <span class="termHighlight">8.3 min</span>
+                                one-way. Houston confirms.</span></div>
+                        <div class="terminalLine" id="spaceLine6"><span
+                                class="termPrompt">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="termCursor"></span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- SECTION 2 — MARS ORBIT (Rotating Mars globe + scan data + commander decision) -->
+    <section class="pageSection" id="orbitSection">
+
+        <!-- Section header -->
+        <div class="zoneHeader">
+            <div class="zoneTag fadeUp">PHASE III — ORBITAL SURVEY</div>
+            <div class="zoneDepth fadeUp" style="transition-delay:.08s">ALTITUDE: 400 KM ABOVE MARS</div>
+            <div class="zoneName fadeUp" style="transition-delay:.14s">MARS ORBIT</div>
+            <div class="zoneDesc fadeUp" style="transition-delay:.2s">
+                You've arrived. The rust-red planet fills your viewport.
+                Before descent, scan the surface and make the critical go/no-go call.
+            </div>
+        </div>
+
+        <div class="orbitLayout fadeUp" style="transition-delay:.28s">
+
+            <!-- Animated Mars planet -->
+            <div class="marsGlobeWrap">
+                <div class="marsGlobe" id="marsGlobe">
+                    <div class="marsPolarCap"></div> <!-- white polar ice cap -->
+                    <div class="marsCrater marsCrater1"></div>
+                    <div class="marsCrater marsCrater2"></div>
+                    <div class="marsCrater marsCrater3"></div>
+                    <div class="marsAtmosphere"></div> <!-- subtle glow rim -->
+                    <div class="marsScanLine"></div> <!-- animated scan line -->
+                </div>
+                <!-- Spacecraft orbiting around the planet -->
+                <div class="marsOrbitRing">
+                    <div class="marsOrbitShip">🛸</div>
+                </div>
+            </div>
+
+            <!-- Right side scan data + decision panel -->
+            <div class="orbitDataCol">
+
+                <!-- Surface data table -->
+                <div class="scanPanel">
+                    <div class="scanPanelHeader">▸ SURFACE ANALYSIS SCAN</div>
+                    <div class="scanRow"><span class="scanKey">Surface Temp</span><span class="scanVal scanWarn">−63°C
+                            avg (−130°C poles)</span></div>
+                    <div class="scanRow"><span class="scanKey">Atmosphere</span><span class="scanVal scanDanger">95.3%
+                            CO₂ — NOT BREATHABLE</span></div>
+                    <div class="scanRow"><span class="scanKey">Gravity</span><span class="scanVal">0.38 g (38% of
+                            Earth)</span></div>
+                    <div class="scanRow"><span class="scanKey">Sol Duration</span><span class="scanVal">24 h 37
+                            min</span></div>
+                    <div class="scanRow"><span class="scanKey">Dust Storms</span><span class="scanVal scanWarn">Global
+                            events — can last weeks</span></div>
+                    <div class="scanRow"><span class="scanKey">Jezero Crater LZ</span><span class="scanVal scanOk">✓
+                            CLEAR — CONFIRMED</span></div>
+                </div>
+
+                <!-- Commander decision buttons -->
+                <div class="decisionPanel">
+                    <div class="decisionTitle">▸ COMMANDER DECISION — GO / NO-GO</div>
+                    <div class="decisionBtns">
+                        <button class="decisionBtn" onclick="orbitDecision('go', this)">✓ GO FOR LANDING</button>
+                        <button class="decisionBtn" onclick="orbitDecision('delay', this)">⏸ DELAY 1 SOL</button>
+                        <button class="decisionBtn" onclick="orbitDecision('abort', this)">✕ ABORT MISSION</button>
+                    </div>
+                    <div class="decisionResult" id="decisionResult">Awaiting commander decision…</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- SECTION 3 — EDL (7 Minutes of Terror)Big countdown timer + stage-by-stage animation) -->
+    <section class="pageSection" id="landingSection">
+        <div class="landingContent">
+
+            <!-- Section header -->
+            <div class="zoneHeader">
+                <div class="zoneTag fadeUp">PHASE IV — ENTRY, DESCENT &amp; LANDING</div>
+                <div class="zoneDepth fadeUp" style="transition-delay:.08s">ENTRY VELOCITY: 19,800 KM/H</div>
+                <div class="zoneName fadeUp" style="transition-delay:.14s">"7 MINUTES<br />OF TERROR"</div>
+                <div class="zoneDesc fadeUp" style="transition-delay:.2s">
+                    Full stop from 19,800 km/h — autonomously, with zero help from Earth.
+                    The most dangerous seven minutes in exploration history.
+                </div>
+            </div>
+
+            <div class="fadeUp" style="transition-delay:.3s">
+
+                <!-- Big timer display + current phase label -->
+                <div class="edlTimerRow">
+                    <div class="edlTimer" id="edlTimer">7:00</div>
+                    <div class="edlPhaseTag" id="edlPhaseTag">READY TO INITIATE</div>
+                </div>
+
+                <!-- Altitude progress bar -->
+                <div class="altitudeRow">
+                    <span class="altitudeLabel">ALTITUDE</span>
+                    <div class="altitudeTrack">
+                        <div class="altitudeFill" id="altitudeFill" style="width:100%"></div>
+                    </div>
+                    <span class="altitudeValue" id="altitudeValue">125 km</span>
+                </div>
+
+                <!-- EDL stage cards -->
+                <div class="edlStageList">
+                    <div class="edlStage" id="edlStage0">
+                        <div class="edlStageIcon">🔥</div>
+                        <div class="edlStageInfo">
+                            <div class="edlStageName">ATMOSPHERIC ENTRY</div>
+                            <div class="edlStageDesc">Heat shield absorbs 1,600°C. Plasma blackout — 6 min comms
+                                silence.</div>
+                        </div>
+                        <div class="edlStageAlt">125 km</div>
+                        <div class="edlStageStatus">STANDBY</div>
+                    </div>
+                    <div class="edlStage" id="edlStage1">
+                        <div class="edlStageIcon">🪂</div>
+                        <div class="edlStageInfo">
+                            <div class="edlStageName">SUPERSONIC PARACHUTE</div>
+                            <div class="edlStageDesc">21.5m chute at Mach 1.7. Decelerates from 1,512 to 320 km/h.</div>
+                        </div>
+                        <div class="edlStageAlt">11 km</div>
+                        <div class="edlStageStatus">STANDBY</div>
+                    </div>
+                    <div class="edlStage" id="edlStage2">
+                        <div class="edlStageIcon">🛡️</div>
+                        <div class="edlStageInfo">
+                            <div class="edlStageName">HEAT SHIELD JETTISON</div>
+                            <div class="edlStageDesc">Shield released. Radar locks surface. Targeting computers active.
+                            </div>
+                        </div>
+                        <div class="edlStageAlt">8 km</div>
+                        <div class="edlStageStatus">STANDBY</div>
+                    </div>
+                    <div class="edlStage" id="edlStage3">
+                        <div class="edlStageIcon">🔩</div>
+                        <div class="edlStageInfo">
+                            <div class="edlStageName">SKY CRANE DESCENT</div>
+                            <div class="edlStageDesc">Retro-rockets fire. Rover lowered on cables at 0.75 m/s.</div>
+                        </div>
+                        <div class="edlStageAlt">2 km</div>
+                        <div class="edlStageStatus">STANDBY</div>
+                    </div>
+                    <div class="edlStage" id="edlStage4">
+                        <div class="edlStageIcon">🤖</div>
+                        <div class="edlStageInfo">
+                            <div class="edlStageName">TOUCHDOWN — JEZERO CRATER</div>
+                            <div class="edlStageDesc">Wheels contact Mars. Cables severed. Sky Crane flies away.
+                                TOUCHDOWN!</div>
+                        </div>
+                        <div class="edlStageAlt">0 m</div>
+                        <div class="edlStageStatus">STANDBY</div>
+                    </div>
+                </div>
+
+                <!-- Button to start the EDL animation -->
+                <button class="edlStartBtn" id="edlStartBtn" onclick="startEDL()">
+                    ▶ &nbsp;INITIATE EDL SEQUENCE
+                </button>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- SECTION 4 — EXPLORATION(Rover driving game + sample collection + science log) -->
+    <section class="pageSection" id="explorationSection">
+
+        <!-- Section header -->
+        <div class="zoneHeader">
+            <div class="zoneTag fadeUp">PHASE V — SURFACE OPERATIONS</div>
+            <div class="zoneDepth fadeUp" style="transition-delay:.08s">JEZERO CRATER &nbsp;·&nbsp; SOL 001</div>
+            <div class="zoneName fadeUp" style="transition-delay:.14s">EXPLORATION</div>
+        </div>
+
+        <div class="twoColLayout">
+
+            <!-- LEFT: Rover game + sample chips -->
+            <div class="twoColLeft" style="flex:1.4">
+
+                <!-- Rover driving arena -->
+                <div class="roverArena fadeUp" style="transition-delay:.22s">
+
+                    <!-- Mars landscape screen -->
+                    <div class="roverScreen">
+                        <div class="roverSky"></div>
+                        <div class="roverHaze"></div>
+                        <div class="roverHorizon"></div>
+                        <div class="roverGround"></div>
+
+                        <!-- HUD chips inside the screen -->
+                        <div class="roverScreenHud">
+                            <div class="roverHudChip">SOL <span class="roverHudValue" id="roverSolDay">001</span></div>
+                            <div class="roverHudChip">PWR <span class="roverHudValue" id="roverPowerPct">100%</span>
+                            </div>
+                            <div class="roverHudChip">TEMP <span class="roverHudValue">−63°C</span></div>
+                        </div>
+
+                        <!-- The rover itself (moves left/right) -->
+                        <div class="roverEmoji" id="roverEmoji" style="left:32%">🤖</div>
+
+                        <!-- Collectible items on the Mars surface -->
+                        <div class="collectItem" id="collectItem0" style="left:62%;bottom:44%"
+                            onclick="collectSample(0)">🪨</div>
+                        <div class="collectItem" id="collectItem1" style="left:78%;bottom:45%"
+                            onclick="collectSample(1)">🧊</div>
+                        <div class="collectItem" id="collectItem2" style="left:14%;bottom:43%"
+                            onclick="collectSample(2)">🌪️</div>
+                        <div class="collectItem" id="collectItem3" style="left:88%;bottom:45%"
+                            onclick="collectSample(3)">💎</div>
+                    </div>
+
+                    <!-- Rover controls row -->
+                    <div class="roverControls">
+                        <div class="dpadWrap">
+                            <div class="dpadLabel">DRIVE CONTROL</div>
+                            <div class="dpad">
+                                <div></div>
+                                <div class="dpadBtn" onclick="moveRover('up')">▲</div>
+                                <div></div>
+                                <div class="dpadBtn" onclick="moveRover('left')">◀</div>
+                                <div class="dpadBtn dpadCenter" onclick="moveRover('stop')">●</div>
+                                <div class="dpadBtn" onclick="moveRover('right')">▶</div>
+                            </div>
+                        </div>
+
+                        <!-- Rover stat bars -->
+                        <div class="roverStatBars">
+                            <div class="roverStatRow">
+                                <span class="roverStatLabel">POWER</span>
+                                <div class="roverStatTrack">
+                                    <div class="roverStatFill" id="roverPowerBar"
+                                        style="width:100%;background:var(--colorGreen)"></div>
+                                </div>
+                                <span class="roverStatValue" id="roverPowerVal">100%</span>
+                            </div>
+                            <div class="roverStatRow">
+                                <span class="roverStatLabel">STORAGE</span>
+                                <div class="roverStatTrack">
+                                    <div class="roverStatFill" id="roverStorageBar"
+                                        style="width:0%;background:var(--colorCyan)"></div>
+                                </div>
+                                <span class="roverStatValue" id="roverStorageVal">0/4</span>
+                            </div>
+                            <div class="roverStatRow">
+                                <span class="roverStatLabel">DISTANCE</span>
+                                <div class="roverStatTrack">
+                                    <div class="roverStatFill" id="roverDistanceBar"
+                                        style="width:0%;background:var(--colorGold)"></div>
+                                </div>
+                                <span class="roverStatValue" id="roverDistanceVal">0 m</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Log message at the bottom of rover arena -->
+                    <div class="roverLog" id="roverLog">
+                        › PERSEVERANCE ONLINE. ARROW KEYS OR D-PAD TO DRIVE. COLLECT ALL SAMPLES!
+                    </div>
+                </div>
+
+                <!-- Sample collection chips (light up when collected) -->
+                <div class="samplePanel fadeUp" style="transition-delay:.32s">
+                    <div class="samplePanelTitle">▸ SAMPLE COLLECTION &nbsp;— &nbsp;<span id="sampleCount">0</span> / 4
+                        RETRIEVED</div>
+                    <div class="sampleChips">
+                        <div class="sampleChip" id="sampleChip0">🪨 &nbsp;Basalt Rock</div>
+                        <div class="sampleChip" id="sampleChip1">🧊 &nbsp;Water Ice</div>
+                        <div class="sampleChip" id="sampleChip2">🌪️ &nbsp;Dust Sample</div>
+                        <div class="sampleChip" id="sampleChip3">💎 &nbsp;Perchlorate</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT: Science terminal + Mars facts + final card -->
+            <div class="twoColRight">
+
+                <!-- Science log terminal -->
+                <div class="glassTerminal fadeUp" style="transition-delay:.26s">
+                    <div class="terminalTopBar">
+                        <div class="terminalDot terminalDotRed"></div>
+                        <div class="terminalDot terminalDotYellow"></div>
+                        <div class="terminalDot terminalDotGreen"></div>
+                        <span class="terminalTitle">SURFACE_SCIENCE.LOG</span>
+                    </div>
+                    <div class="terminalBody" id="scienceLog">
+                        <div class="terminalLine" id="sciLine1"><span class="termPrompt termPromptSys">SCI ›</span><span
+                                class="termText">Touchdown confirmed. Jezero, 18.4°N 77.6°E.</span></div>
+                        <div class="terminalLine" id="sciLine2"><span class="termPrompt termPromptOk">GEO ›</span><span
+                                class="termText">Jezero was a lake <span class="termHighlight">3.5 billion years
+                                    ago</span>.</span></div>
+                        <div class="terminalLine" id="sciLine3"><span class="termPrompt termPromptOk">CHM ›</span><span
+                                class="termText">Perchlorate salts — energy source for microbes.</span></div>
+                        <div class="terminalLine" id="sciLine4"><span class="termPrompt termPromptWarn">ATM
+                                ›</span><span class="termText">MOXIE: <span class="termWarn">O₂ produced from CO₂
+                                    ✓</span></span></div>
+                        <div class="terminalLine" id="sciLine5"><span class="termPrompt termPromptOk">FLT ›</span><span
+                                class="termText">Ingenuity: first powered flight on another world.</span></div>
+                        <div class="terminalLine" id="sciLine6"><span class="termPrompt termPromptSys">SCI ›</span><span
+                                class="termText">Organic molecules detected. Not confirmed life — yet.</span></div>
+                        <div class="terminalLine" id="sciLine7"><span
+                                class="termPrompt">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="termCursor"></span></div>
+                    </div>
+                </div>
+
+                <!-- Mars planet stats grid -->
+                <div class="marsStatsGrid fadeUp" style="transition-delay:.34s">
+                    <div class="marsStatCell">
+                        <div class="marsStatLabel">Diameter</div>
+                        <div class="marsStatValue marsStatValueCyan">6,779 km</div>
+                    </div>
+                    <div class="marsStatCell">
+                        <div class="marsStatLabel">Moons</div>
+                        <div class="marsStatValue marsStatValueCyan">Phobos + Deimos</div>
+                    </div>
+                    <div class="marsStatCell">
+                        <div class="marsStatLabel">Olympus Mons</div>
+                        <div class="marsStatValue marsStatValueGold">21 km tall</div>
+                    </div>
+                    <div class="marsStatCell">
+                        <div class="marsStatLabel">Valles Marineris</div>
+                        <div class="marsStatValue marsStatValueGold">4,000 km long</div>
+                    </div>
+                </div>
+
+                <!-- Final mission complete card -->
+                <div class="finalCard fadeUp" style="transition-delay:.42s">
+                    <div class="finalQuote">
+                        You made it. 225 million kilometres from home, standing on red soil
+                        beneath a pink Martian sky — humanity's greatest adventure, just beginning.
+                    </div>
+                    <button class="restartBtn" onclick="window.scrollTo({top:0, behavior:'smooth'})">
+                        ↑ &nbsp;RESTART MISSION
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- JavaScript -->
+    <script src="script.js"></script>
+
+</body>
+
+</html>
