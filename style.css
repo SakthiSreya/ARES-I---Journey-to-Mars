@@ -1,0 +1,2176 @@
+/* style.css — ARES I: Journey to Mars
+All class names are written to be human-readable.
+Example: .rocketWrap = the wrapper div around the rocket
+            .rocketFlame = the flame effect below the rocket
+            .countdownNumber = the big number in each timer block
+             */
+
+/* ── GLOBAL COLOR VARIABLES ─────────────────────────────────
+   Use these everywhere so colors are easy to change in one place */
+:root {
+    --colorRed: #e8431a;
+    /* Mars red — primary accent */
+    --colorOrange: #f07020;
+    /* Warm orange — secondary accent */
+    --colorGold: #ffaa00;
+    /* Gold — used for warnings / timer */
+    --colorCyan: #00c8ff;
+    /* Cyan — used for data / info */
+    --colorGreen: #00e888;
+    /* Green — used for OK status */
+    --colorBg: #04020c;
+    /* Deep dark background */
+
+    --fontMono: 'Share Tech Mono', monospace;
+    /* terminal / labels */
+    --fontDisplay: 'Bebas Neue', sans-serif;
+    /* big headings */
+    --fontBody: 'Rajdhani', sans-serif;
+    /* general UI text */
+    --fontItalic: 'Cormorant', serif;
+    /* italic quotes */
+}
+
+/* RESET & BASE  */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+    scroll-snap-type: y mandatory;
+}
+
+body {
+    background: var(--colorBg);
+    color: #fff;
+    font-family: var(--fontMono);
+    cursor: none;
+    /* hides default cursor; we use a custom one */
+    overflow-x: hidden;
+}
+
+/* Subtle film-grain noise texture over everything */
+body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    background-size: 180px;
+    opacity: .5;
+}
+
+/* STAR CANVAS (fixed behind everything)  */
+#starCanvas {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+}
+
+/* CUSTOM CURSOR
+cursorRing  = the outer SVG crosshair that lags behind
+cursorDot   = the small sharp dot that follows exactly
+*/
+#cursorRing {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: transform 0.15s ease;
+}
+
+#cursorRing svg {
+    display: block;
+}
+
+#cursorDot {
+    position: fixed;
+    width: 5px;
+    height: 5px;
+    background: var(--colorOrange);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 10px var(--colorOrange), 0 0 20px rgba(240, 112, 32, .4);
+}
+
+/* TOP HUD BAR
+topHud        = the entire fixed bar at the top
+hudLogo       = "ARES I" text on the left
+hudStatsGroup = the three stat columns in the middle
+hudStat       = one stat column (label + value)
+hudStatLabel  = small label text (e.g. "Mission Day")
+hudStatValue  = the big number/text value
+hudRight      = right side group (dot + badge + phase)
+hudLiveDot    = the blinking green dot
+hudBadge      = "MISSION ACTIVE" pill
+hudPhaseName  = current phase text on the far right
+*/
+#topHud {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 52px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    background: rgba(4, 2, 12, .88);
+    border-bottom: 1px solid rgba(232, 67, 26, .14);
+    backdrop-filter: blur(28px) saturate(160%);
+}
+
+/* Decorative center line under the HUD */
+#topHud::before {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(232, 67, 26, .35), transparent);
+}
+
+.hudLogo {
+    font-family: var(--fontDisplay);
+    font-size: 26px;
+    letter-spacing: 8px;
+    background: linear-gradient(135deg, #fff 0%, var(--colorOrange) 55%, var(--colorRed) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.hudStatsGroup {
+    display: flex;
+    height: 100%;
+}
+
+.hudStat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 0 22px;
+    border-left: 1px solid rgba(255, 255, 255, .045);
+}
+
+.hudStatLabel {
+    font-size: 7px;
+    letter-spacing: 3px;
+    color: rgba(255, 255, 255, .22);
+    text-transform: uppercase;
+}
+
+.hudStatValue {
+    font-family: var(--fontBody);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: #fff;
+}
+
+.hudRight {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.hudLiveDot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--colorGreen);
+    box-shadow: 0 0 8px var(--colorGreen);
+    animation: animLiveDot 2s ease-in-out infinite;
+}
+
+@keyframes animLiveDot {
+
+    0%,
+    100% {
+        opacity: 1;
+        box-shadow: 0 0 8px var(--colorGreen);
+    }
+
+    50% {
+        opacity: .5;
+        box-shadow: 0 0 3px var(--colorGreen);
+    }
+}
+
+.hudBadge {
+    font-size: 8px;
+    letter-spacing: 3px;
+    color: rgba(232, 67, 26, .7);
+    padding: 5px 12px;
+    border: 1px solid rgba(232, 67, 26, .2);
+    border-radius: 2px;
+    background: rgba(232, 67, 26, .04);
+}
+
+.hudPhaseName {
+    font-size: 8px;
+    letter-spacing: 3px;
+    color: rgba(255, 255, 255, .22);
+}
+
+/* LEFT SIDE NAV
+leftNav       = the fixed sidebar panel on the left
+navBtn        = each clickable icon button
+navBtn.active = the currently active section button
+navBtnTooltip = the hover tooltip text
+*/
+#leftNav {
+    position: fixed;
+    left: 0;
+    top: 52px;
+    bottom: 0;
+    width: 52px;
+    z-index: 900;
+    background: rgba(4, 2, 12, .72);
+    border-right: 1px solid rgba(255, 255, 255, .04);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 0;
+    gap: 6px;
+    backdrop-filter: blur(20px);
+}
+
+.navBtn {
+    width: 36px;
+    height: 36px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, .025);
+    border: 1px solid rgba(255, 255, 255, .055);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    position: relative;
+    transition: all .4s cubic-bezier(.23, 1, .32, 1);
+}
+
+.navBtn:hover,
+.navBtn.active {
+    background: rgba(232, 67, 26, .1);
+    border-color: rgba(232, 67, 26, .35);
+    box-shadow: 0 0 18px rgba(232, 67, 26, .18);
+}
+
+.navBtnTooltip {
+    position: absolute;
+    left: 48px;
+    white-space: nowrap;
+    padding: 5px 11px;
+    background: rgba(4, 2, 12, .97);
+    border: 1px solid rgba(232, 67, 26, .18);
+    font-size: 8px;
+    letter-spacing: 2px;
+    color: rgba(255, 255, 255, .6);
+    border-radius: 3px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s;
+}
+
+.navBtn:hover .navBtnTooltip {
+    opacity: 1;
+}
+
+/* RIGHT DEPTH GAUGE (journey progress)
+rightGauge  = fixed sidebar on the right
+gaugeLabel  = "JOURNEY" vertical text
+gaugeTrack  = the thin vertical bar track
+gaugeFill   = the colored fill inside the track
+gaugeKm     = the km number below the bar
+ */
+#rightGauge {
+    position: fixed;
+    right: 0;
+    top: 52px;
+    bottom: 0;
+    width: 52px;
+    z-index: 900;
+    background: rgba(4, 2, 12, .72);
+    border-left: 1px solid rgba(255, 255, 255, .04);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    backdrop-filter: blur(20px);
+}
+
+.gaugeLabel {
+    font-size: 7px;
+    letter-spacing: 1.5px;
+    color: rgba(255, 255, 255, .18);
+    writing-mode: vertical-rl;
+}
+
+.gaugeTrack {
+    width: 3px;
+    height: 170px;
+    background: rgba(255, 255, 255, .04);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.gaugeFill {
+    width: 100%;
+    height: 0%;
+    border-radius: 2px;
+    background: linear-gradient(to bottom,
+            var(--colorCyan), var(--colorGreen),
+            var(--colorGold), var(--colorOrange), var(--colorRed));
+    transition: height .5s ease;
+}
+
+.gaugeKm {
+    font-family: var(--fontBody);
+    font-size: 8px;
+    color: var(--colorOrange);
+    writing-mode: vertical-rl;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+/* PAGE SECTIONS (scroll-snap containers)
+pageSection = every full-screen section
+ */
+.pageSection {
+    min-height: 100vh;
+    padding: 68px 72px 48px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    scroll-snap-align: start;
+    position: relative;
+    overflow: hidden;
+    z-index: 10;
+}
+
+/* SECTION 0 — LAUNCH
+ */
+#launchSection {
+    background:
+        radial-gradient(ellipse 90% 60% at 50% 100%, rgba(120, 30, 8, .32) 0%, transparent 65%),
+        radial-gradient(ellipse 40% 30% at 80% 60%, rgba(60, 10, 3, .2) 0%, transparent 60%);
+}
+
+/* Content box (left side of launch section) */
+.launchContent {
+    position: relative;
+    z-index: 2;
+    max-width: 660px;
+}
+
+/* Small label above the hero title */
+.launchEyebrow {
+    font-size: 8px;
+    letter-spacing: 6px;
+    color: rgba(240, 112, 32, .5);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.launchEyebrow::before {
+    content: '';
+    width: 28px;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(240, 112, 32, .5));
+}
+
+.launchEyebrow::after {
+    content: '';
+    max-width: 40px;
+    height: 1px;
+    background: linear-gradient(to right, rgba(240, 112, 32, .5), transparent);
+}
+
+/* ── Hero title: "JOURNEY TO MARS" ── */
+.heroTitle {
+    font-family: var(--fontDisplay);
+    font-size: clamp(72px, 14vw, 188px);
+    letter-spacing: 4px;
+    line-height: .84;
+}
+
+/* "JOURNEY" — white to orange gradient */
+.heroTitleWord1 {
+    display: block;
+    background: linear-gradient(175deg, #ffffff 0%, #ffe8d8 35%, #ffa060 70%, rgba(255, 100, 40, .7) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* "TO MARS" — orange to deep red gradient */
+.heroTitleWord2 {
+    display: block;
+    background: linear-gradient(175deg, #ff7040 0%, #e8431a 50%, #900d00 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 48px rgba(232, 67, 26, .35));
+}
+
+/* Italic subtitle paragraph */
+.heroSubtitle {
+    font-family: var(--fontItalic);
+    font-size: clamp(15px, 1.8vw, 21px);
+    font-style: italic;
+    color: rgba(255, 255, 255, .35);
+    max-width: 460px;
+    line-height: 1.9;
+    margin-top: 22px;
+    letter-spacing: .3px;
+}
+
+/* ── Countdown Timer ── */
+.countdownRow {
+    display: flex;
+    gap: clamp(8px, 1.2vw, 14px);
+    margin-top: 40px;
+}
+
+/* Each block: HOURS / MINUTES / SECONDS / CENTISEC */
+.countdownBlock {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    padding: clamp(12px, 2vw, 20px) clamp(14px, 2.5vw, 26px);
+    border-radius: 5px;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(145deg, rgba(255, 110, 40, .06), rgba(200, 40, 10, .03));
+    border: 1px solid rgba(232, 67, 26, .16);
+}
+
+/* Top specular highlight line on each block */
+.countdownBlock::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(255, 140, 60, .3), transparent);
+}
+
+/* Bottom shadow on each block */
+.countdownBlock::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40%;
+    background: linear-gradient(to top, rgba(0, 0, 0, .25), transparent);
+}
+
+/* The big number inside each countdown block */
+.countdownNumber {
+    font-family: var(--fontBody);
+    font-size: clamp(30px, 5vw, 56px);
+    font-weight: 700;
+    line-height: 1;
+    position: relative;
+    z-index: 1;
+    background: linear-gradient(to bottom, #fff 0%, rgba(255, 180, 100, .9) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Centiseconds number is slightly smaller */
+.countdownCentisecNum {
+    font-size: clamp(22px, 3.5vw, 40px);
+}
+
+.countdownLabel {
+    font-size: 7px;
+    letter-spacing: 4px;
+    color: rgba(255, 255, 255, .2);
+    position: relative;
+    z-index: 1;
+}
+
+/* ── Systems Verification Checklist ── */
+.systemsCheck {
+    margin-top: 34px;
+    max-width: 520px;
+}
+
+.systemsCheckHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 13px;
+}
+
+.systemsCheckTitle {
+    font-size: 8px;
+    letter-spacing: 4px;
+    color: rgba(240, 112, 32, .5);
+}
+
+.systemsCheckProgress {
+    font-family: var(--fontBody);
+    font-size: 10px;
+    color: rgba(255, 255, 255, .2);
+    font-weight: 600;
+}
+
+/* The 2-column grid of system items */
+.systemsGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+}
+
+/* Each clickable system row (e.g. PROPULSION, LIFE SUPPORT…) */
+.systemItem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 14px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, .052);
+    background: rgba(255, 255, 255, .018);
+    font-family: var(--fontBody);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    color: rgba(255, 255, 255, .35);
+    cursor: pointer;
+    transition: all .35s cubic-bezier(.23, 1, .32, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Left accent bar (appears when system is verified) */
+.systemItem::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: transparent;
+    transition: background .35s;
+}
+
+.systemItem:hover {
+    color: rgba(255, 255, 255, .65);
+    border-color: rgba(255, 255, 255, .1);
+}
+
+/* Green state when user clicks to verify */
+.systemItem.verified {
+    color: rgba(255, 255, 255, .8);
+    border-color: rgba(0, 232, 136, .18);
+    background: rgba(0, 232, 136, .04);
+}
+
+.systemItem.verified::before {
+    background: var(--colorGreen);
+    box-shadow: 0 0 8px var(--colorGreen);
+}
+
+/* The small circle dot on each system item */
+.systemDot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, .18);
+    transition: all .35s;
+    flex-shrink: 0;
+}
+
+.systemItem.verified .systemDot {
+    background: var(--colorGreen);
+    border-color: var(--colorGreen);
+    box-shadow: 0 0 8px var(--colorGreen);
+}
+
+/* Status text below the grid */
+.systemsStatus {
+    margin-top: 14px;
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: rgba(255, 255, 255, .2);
+    transition: all .5s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.systemsStatus::before {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(255, 255, 255, .045);
+}
+
+/* Green state when all 6 systems are verified */
+.systemsStatus.allReady {
+    color: var(--colorGreen);
+}
+
+/* ── Launch Button ── */
+.launchBtn {
+    margin-top: 26px;
+    padding: 15px 50px;
+    font-family: var(--fontBody);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 5px;
+    background: transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all .5s cubic-bezier(.23, 1, .32, 1);
+    position: relative;
+    overflow: hidden;
+    color: rgba(255, 255, 255, .25);
+    border: 1px solid rgba(255, 255, 255, .08);
+}
+
+/* Enabled state (after all systems verified) */
+.launchBtn:not(:disabled) {
+    color: var(--colorOrange);
+    border-color: rgba(232, 67, 26, .35);
+}
+
+.launchBtn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(232, 67, 26, .12), rgba(200, 40, 10, .04));
+    opacity: 0;
+    transition: opacity .4s;
+}
+
+.launchBtn:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 48px rgba(232, 67, 26, .25), 0 8px 32px rgba(0, 0, 0, .4);
+    border-color: rgba(232, 67, 26, .6);
+}
+
+.launchBtn:not(:disabled):hover::before {
+    opacity: 1;
+}
+
+.launchBtn:disabled {
+    cursor: not-allowed;
+}
+
+/* ── Rocket Visual ── */
+/* Wrapper positions rocket on the right side of screen */
+.rocketWrap {
+    position: absolute;
+    right: 8%;
+    top: 50%;
+    transform: translateY(-52%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    filter: drop-shadow(0 0 60px rgba(255, 120, 40, .25)) drop-shadow(0 0 120px rgba(200, 60, 10, .12));
+    transition: all 2.5s cubic-bezier(.23, 1, .32, 1);
+}
+
+/* The rocket emoji itself — idle rocking animation */
+.rocketEmoji {
+    font-size: clamp(80px, 10vw, 140px);
+    display: block;
+    animation: animRocketIdle 5s ease-in-out infinite;
+}
+
+@keyframes animRocketIdle {
+
+    0%,
+    100% {
+        transform: translateY(0) rotate(-.8deg);
+    }
+
+    50% {
+        transform: translateY(-10px) rotate(.8deg);
+    }
+}
+
+/* Flame that appears below rocket when launching */
+.rocketFlame {
+    width: clamp(14px, 2vw, 24px);
+    height: 60px;
+    margin-top: -8px;
+    opacity: 0;
+    background: linear-gradient(to bottom,
+            rgba(255, 200, 80, 1),
+            rgba(255, 120, 30, .7),
+            rgba(255, 60, 20, .2),
+            transparent);
+    border-radius: 0 0 60% 60%;
+    animation: animRocketFlame .1s ease-in-out infinite alternate;
+}
+
+@keyframes animRocketFlame {
+    0% {
+        height: 55px;
+        transform: scaleX(1);
+    }
+
+    100% {
+        height: 85px;
+        transform: scaleX(1.15);
+    }
+}
+
+/* Launched state — rocket flies up and off screen */
+.rocketWrap.launched .rocketEmoji {
+    animation: animRocketLaunch 2.5s cubic-bezier(.55, .05, .68, .19) forwards;
+}
+
+@keyframes animRocketLaunch {
+    to {
+        transform: translateY(-280vh) rotate(-6deg);
+        opacity: 0;
+    }
+}
+
+/* ZONE HEADERS (used in sections 1–4)
+zoneTag   = small label e.g. "PHASE II — INTERPLANETARY CRUISE"
+zoneDepth = distance/altitude subtitle
+zoneName  = big section title (e.g. "DEEP SPACE")
+zoneDesc  = italic description paragraph
+ */
+.zoneHeader {
+    margin-bottom: 28px;
+}
+
+.zoneTag {
+    font-size: 8px;
+    letter-spacing: 5px;
+    color: rgba(232, 67, 26, .45);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 9px;
+}
+
+.zoneTag::after {
+    content: '';
+    max-width: 50px;
+    height: 1px;
+    background: linear-gradient(to right, rgba(232, 67, 26, .3), transparent);
+}
+
+.zoneDepth {
+    font-family: var(--fontBody);
+    font-size: clamp(10px, 1.2vw, 13px);
+    letter-spacing: 7px;
+    color: rgba(255, 255, 255, .12);
+    margin-bottom: 11px;
+    font-weight: 300;
+}
+
+.zoneName {
+    font-family: var(--fontDisplay);
+    font-size: clamp(44px, 8vw, 100px);
+    letter-spacing: 2px;
+    line-height: .88;
+    background: linear-gradient(165deg, #ffffff 20%, rgba(255, 220, 180, .65) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.zoneDesc {
+    font-family: var(--fontItalic);
+    font-size: clamp(15px, 1.6vw, 19px);
+    font-style: italic;
+    color: rgba(255, 255, 255, .32);
+    max-width: 480px;
+    line-height: 1.9;
+    margin-top: 14px;
+}
+
+/* TWO-COLUMN LAYOUT (used in sections 1 & 4)
+ */
+.twoColLayout {
+    display: flex;
+    gap: 36px;
+    flex-wrap: wrap;
+    max-width: 940px;
+    width: 100%;
+}
+
+.twoColLeft {
+    flex: 1;
+    min-width: 280px;
+}
+
+.twoColRight {
+    flex: 1;
+    min-width: 260px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* SECTION 1 — SPACE TRAVEL
+ */
+#spaceSection::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(ellipse 55% 70% at 8% 50%, rgba(100, 60, 180, .05) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 50% at 95% 30%, rgba(0, 180, 255, .04) 0%, transparent 55%);
+}
+
+/* ── Journey Timeline ── */
+.journeyTimeline {
+    display: flex;
+    flex-direction: column;
+    padding-left: 22px;
+    border-left: 1px solid rgba(255, 255, 255, .06);
+    max-width: 500px;
+}
+
+/* Each milestone row */
+.timelineItem {
+    position: relative;
+    padding: 13px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, .038);
+    cursor: pointer;
+    opacity: 0;
+    transform: translateX(-14px);
+    transition: opacity .55s, transform .55s;
+}
+
+.timelineItem:last-child {
+    border: none;
+}
+
+/* Visible state after JS adds .visible class */
+.timelineItem.visible {
+    opacity: 1;
+    transform: none;
+}
+
+/* Small circle on the left timeline line */
+.timelineItem::before {
+    content: '';
+    position: absolute;
+    left: -27px;
+    top: 19px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 1px solid rgba(232, 67, 26, .3);
+    background: rgba(4, 2, 12, .9);
+    transition: all .4s;
+}
+
+.timelineItem:hover::before,
+.timelineItem.open::before {
+    background: var(--colorRed);
+    border-color: var(--colorRed);
+    box-shadow: 0 0 12px rgba(232, 67, 26, .6);
+}
+
+.timelineItemDay {
+    font-size: 7px;
+    letter-spacing: 3px;
+    color: rgba(240, 160, 60, .45);
+    margin-bottom: 4px;
+}
+
+.timelineItemTitle {
+    font-family: var(--fontBody);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, .65);
+    transition: color .3s;
+}
+
+.timelineItem:hover .timelineItemTitle,
+.timelineItem.open .timelineItemTitle {
+    color: #fff;
+}
+
+/* Expandable fact text — hidden by default */
+.timelineItemFact {
+    font-family: var(--fontItalic);
+    font-size: 14px;
+    font-style: italic;
+    color: rgba(255, 255, 255, .35);
+    line-height: 1.7;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height .45s ease, margin .3s;
+}
+
+.timelineItem.open .timelineItemFact {
+    max-height: 80px;
+    margin-top: 8px;
+}
+
+/* ── Hazard Cards ── */
+.hazardGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.hazardCard {
+    padding: 18px 16px;
+    border-radius: 5px;
+    position: relative;
+    overflow: hidden;
+    background: rgba(255, 255, 255, .02);
+    border: 1px solid rgba(255, 255, 255, .055);
+    cursor: pointer;
+    transition: all .4s cubic-bezier(.23, 1, .32, 1);
+}
+
+/* Orange glow fill on hover */
+.hazardCard::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(232, 67, 26, .08), transparent);
+    opacity: 0;
+    transition: opacity .4s;
+}
+
+/* Red left accent bar on hover */
+.hazardCard::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: rgba(232, 67, 26, .3);
+    transform: scaleY(0);
+    transform-origin: top;
+    transition: transform .4s cubic-bezier(.23, 1, .32, 1);
+}
+
+.hazardCard:hover {
+    transform: translateY(-4px);
+    border-color: rgba(232, 67, 26, .25);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, .4), 0 0 24px rgba(232, 67, 26, .08);
+}
+
+.hazardCard:hover::before {
+    opacity: 1;
+}
+
+.hazardCard:hover::after {
+    transform: scaleY(1);
+}
+
+.hazardIcon {
+    font-size: 24px;
+    display: block;
+    margin-bottom: 11px;
+}
+
+.hazardName {
+    font-family: var(--fontBody);
+    font-size: 8px;
+    letter-spacing: 2.5px;
+    font-weight: 600;
+    color: rgba(240, 160, 60, .65);
+    margin-bottom: 7px;
+    display: block;
+    text-transform: uppercase;
+}
+
+.hazardValue {
+    font-family: var(--fontBody);
+    font-size: 22px;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 5px;
+    background: linear-gradient(to bottom, #fff, rgba(255, 200, 100, .8));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.hazardDesc {
+    font-size: 10px;
+    color: rgba(255, 255, 255, .25);
+    line-height: 1.65;
+}
+
+/* ── Glass Terminal (used in both Space & Exploration sections) ── */
+.glassTerminal {
+    border-radius: 6px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, .018);
+    border: 1px solid rgba(255, 255, 255, .065);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .05);
+}
+
+/* Top bar with macOS-style traffic light dots */
+.terminalTopBar {
+    background: rgba(255, 255, 255, .035);
+    border-bottom: 1px solid rgba(255, 255, 255, .055);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.terminalDot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+}
+
+.terminalDotRed {
+    background: #ff5f57;
+    box-shadow: 0 0 5px rgba(255, 95, 87, .5);
+}
+
+.terminalDotYellow {
+    background: #febc2e;
+    box-shadow: 0 0 5px rgba(254, 188, 46, .5);
+}
+
+.terminalDotGreen {
+    background: #28c840;
+    box-shadow: 0 0 5px rgba(40, 200, 64, .5);
+}
+
+.terminalTitle {
+    font-size: 8px;
+    letter-spacing: 3px;
+    color: rgba(255, 255, 255, .18);
+    margin-left: 8px;
+}
+
+.terminalBody {
+    padding: 16px 18px;
+    font-size: 11px;
+    line-height: 2.3;
+}
+
+/* Each line in the terminal — starts hidden, JS adds .visible */
+.terminalLine {
+    opacity: 0;
+    transform: translateX(-6px);
+    transition: all .5s;
+    display: flex;
+    gap: 12px;
+}
+
+.terminalLine.visible {
+    opacity: 1;
+    transform: none;
+}
+
+/* Prompt labels */
+.termPrompt {
+    min-width: 50px;
+    font-size: 10px;
+}
+
+.termPromptSys {
+    color: var(--colorCyan);
+}
+
+.termPromptOk {
+    color: var(--colorGreen);
+}
+
+.termPromptWarn {
+    color: var(--colorGold);
+}
+
+.termPromptErr {
+    color: var(--colorRed);
+}
+
+/* Terminal text colors */
+.termText {
+    color: rgba(255, 255, 255, .5);
+}
+
+.termHighlight {
+    color: var(--colorCyan);
+}
+
+.termWarn {
+    color: var(--colorGold);
+}
+
+/* Blinking cursor at the end */
+.termCursor {
+    display: inline-block;
+    width: 7px;
+    height: 13px;
+    background: rgba(0, 200, 255, .7);
+    animation: animTermCursor .85s step-end infinite;
+    vertical-align: middle;
+    margin-left: 3px;
+    border-radius: 1px;
+}
+
+@keyframes animTermCursor {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0;
+    }
+}
+
+/* ── Small label used above grids ── */
+.sectionSmallLabel {
+    font-size: 8px;
+    letter-spacing: 4px;
+    color: rgba(232, 67, 26, .38);
+}
+
+/* SECTION 2 — MARS ORBIT
+ */
+#orbitSection::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse 80% 80% at 15% 60%, rgba(100, 20, 5, .28) 0%, transparent 60%);
+}
+
+/* Layout: globe on left, data on right */
+.orbitLayout {
+    display: flex;
+    gap: 36px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+}
+
+/* ── Mars Globe ── */
+.marsGlobeWrap {
+    position: relative;
+    width: clamp(200px, 28vw, 300px);
+    height: clamp(200px, 28vw, 300px);
+    flex-shrink: 0;
+}
+
+/* The planet sphere itself */
+.marsGlobe {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 28%,
+            #d04818 0%, #a03010 22%, #782010 44%, #4e1008 65%, #280603 85%, #110200 100%);
+    position: relative;
+    overflow: hidden;
+    box-shadow:
+        inset -24px -24px 60px rgba(0, 0, 0, .75),
+        inset 12px 12px 35px rgba(255, 130, 60, .1),
+        0 0 80px rgba(180, 50, 15, .14),
+        0 0 160px rgba(120, 25, 8, .07);
+}
+
+/* White polar ice cap at the top of the planet */
+.marsPolarCap {
+    position: absolute;
+    top: 3%;
+    left: 22%;
+    right: 22%;
+    height: 11%;
+    background: radial-gradient(ellipse, rgba(255, 255, 255, .18), transparent 70%);
+    border-radius: 50%;
+}
+
+/* Dark crater spots on the planet surface */
+.marsCrater {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, .18);
+    border: 1px solid rgba(0, 0, 0, .12);
+}
+
+.marsCrater1 {
+    width: 16%;
+    height: 9%;
+    top: 29%;
+    left: 20%;
+}
+
+.marsCrater2 {
+    width: 10%;
+    height: 6%;
+    top: 52%;
+    left: 57%;
+}
+
+.marsCrater3 {
+    width: 7%;
+    height: 4%;
+    top: 38%;
+    left: 68%;
+    opacity: .6;
+}
+
+/* Subtle atmosphere/rim glow */
+.marsAtmosphere {
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at 28% 28%, rgba(255, 170, 80, .06), transparent 55%);
+    border: 1px solid rgba(255, 120, 50, .08);
+}
+
+/* Animated horizontal scan line moving top to bottom */
+.marsScanLine {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(to right, transparent, rgba(0, 200, 255, .45), transparent);
+    animation: animMarsScan 2.8s ease-in-out infinite;
+}
+
+@keyframes animMarsScan {
+
+    0%,
+    100% {
+        top: 5%;
+        opacity: 0;
+    }
+
+    8% {
+        opacity: 1;
+    }
+
+    92% {
+        opacity: .7;
+    }
+
+    99% {
+        top: 94%;
+        opacity: 0;
+    }
+}
+
+/* Orbiting ring around the planet */
+.marsOrbitRing {
+    position: absolute;
+    inset: -20px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, .055);
+    animation: animMarsOrbit 7s linear infinite;
+}
+
+.marsOrbitShip {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 13px;
+    filter: drop-shadow(0 0 6px rgba(0, 200, 255, .5));
+}
+
+@keyframes animMarsOrbit {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ── Scan Data Panel ── */
+.orbitDataCol {
+    flex: 1;
+    min-width: 260px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.scanPanel {
+    border-radius: 5px;
+    overflow: hidden;
+    background: rgba(0, 200, 255, .025);
+    border: 1px solid rgba(0, 200, 255, .09);
+    margin-bottom: 10px;
+}
+
+.scanPanelHeader {
+    padding: 9px 14px;
+    background: rgba(0, 200, 255, .04);
+    border-bottom: 1px solid rgba(0, 200, 255, .07);
+    font-size: 8px;
+    letter-spacing: 3px;
+    color: rgba(0, 200, 255, .45);
+}
+
+/* Each row in the scan table */
+.scanRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, .028);
+    font-size: 10px;
+}
+
+.scanRow:last-child {
+    border: none;
+}
+
+.scanKey {
+    color: rgba(255, 255, 255, .28);
+    letter-spacing: .5px;
+}
+
+.scanVal {
+    font-family: var(--fontBody);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+.scanOk {
+    color: var(--colorGreen);
+}
+
+.scanWarn {
+    color: var(--colorGold);
+}
+
+.scanDanger {
+    color: var(--colorRed);
+}
+
+/* ── Commander Decision Panel ── */
+.decisionPanel {
+    border-radius: 5px;
+    padding: 16px;
+    background: rgba(232, 67, 26, .03);
+    border: 1px solid rgba(232, 67, 26, .12);
+}
+
+.decisionTitle {
+    font-size: 8px;
+    letter-spacing: 3px;
+    color: rgba(232, 67, 26, .4);
+    margin-bottom: 13px;
+}
+
+.decisionBtns {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.decisionBtn {
+    padding: 10px 18px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, .07);
+    background: rgba(255, 255, 255, .02);
+    color: rgba(255, 255, 255, .38);
+    font-family: var(--fontBody);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all .35s;
+}
+
+.decisionBtn:hover {
+    border-color: rgba(0, 200, 255, .25);
+    color: rgba(0, 200, 255, .8);
+    background: rgba(0, 200, 255, .05);
+}
+
+.decisionBtn.chosen {
+    border-color: rgba(0, 232, 136, .3);
+    color: var(--colorGreen);
+    background: rgba(0, 232, 136, .05);
+}
+
+.decisionResult {
+    margin-top: 12px;
+    font-family: var(--fontItalic);
+    font-size: 15px;
+    font-style: italic;
+    color: rgba(255, 255, 255, .32);
+    min-height: 22px;
+    transition: color .4s;
+}
+
+/* SECTION 3 — EDL (7 MINUTES OF TERROR)
+ */
+#landingSection::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse 100% 50% at 50% 100%, rgba(100, 25, 5, .3) 0%, transparent 55%);
+}
+
+.landingContent {
+    max-width: 680px;
+    width: 100%;
+}
+
+/* Big countdown timer row */
+.edlTimerRow {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 22px;
+}
+
+/* The large 7:00 countdown number */
+.edlTimer {
+    font-family: var(--fontBody);
+    font-size: clamp(48px, 7vw, 80px);
+    font-weight: 700;
+    letter-spacing: 3px;
+    background: linear-gradient(to bottom, #fff 0%, rgba(255, 200, 80, .85) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 24px rgba(255, 200, 80, .3));
+}
+
+/* Small tag showing current phase name */
+.edlPhaseTag {
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: rgba(255, 190, 0, .55);
+    padding: 5px 13px;
+    border: 1px solid rgba(255, 190, 0, .18);
+    border-radius: 3px;
+    background: rgba(255, 190, 0, .04);
+}
+
+/* Altitude progress bar */
+.altitudeRow {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+.altitudeLabel {
+    font-size: 8px;
+    letter-spacing: 3px;
+    color: rgba(255, 255, 255, .18);
+    white-space: nowrap;
+}
+
+.altitudeTrack {
+    flex: 1;
+    height: 3px;
+    background: rgba(255, 255, 255, .045);
+    border-radius: 2px;
+    position: relative;
+}
+
+.altitudeFill {
+    height: 100%;
+    border-radius: 2px;
+    position: relative;
+    background: linear-gradient(to right, var(--colorRed), var(--colorGold), var(--colorGreen));
+    transition: width .7s cubic-bezier(.23, 1, .32, 1);
+}
+
+/* Glowing dot at the end of the fill bar */
+.altitudeFill::after {
+    content: '';
+    position: absolute;
+    right: -5px;
+    top: -5px;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 12px rgba(255, 220, 100, .9);
+}
+
+.altitudeValue {
+    font-family: var(--fontBody);
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255, 200, 80, .8);
+    min-width: 78px;
+    text-align: right;
+}
+
+/* EDL stage list */
+.edlStageList {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.edlStage {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 13px 16px;
+    border-radius: 5px;
+    border: 1px solid rgba(255, 255, 255, .045);
+    background: rgba(255, 255, 255, .015);
+    transition: all .5s cubic-bezier(.23, 1, .32, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Left accent bar (changes color by state) */
+.edlStage::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: transparent;
+    border-radius: 3px 0 0 3px;
+    transition: all .4s;
+}
+
+/* Active stage — red */
+.edlStage.stageActive {
+    background: rgba(232, 67, 26, .05);
+    border-color: rgba(232, 67, 26, .18);
+}
+
+.edlStage.stageActive::before {
+    background: var(--colorRed);
+    box-shadow: 0 0 10px var(--colorRed);
+}
+
+/* Done stage — green */
+.edlStage.stageDone {
+    background: rgba(0, 232, 136, .03);
+    border-color: rgba(0, 232, 136, .1);
+}
+
+.edlStage.stageDone::before {
+    background: var(--colorGreen);
+    box-shadow: 0 0 8px var(--colorGreen);
+}
+
+.edlStageIcon {
+    font-size: 20px;
+    width: 30px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.edlStageInfo {
+    flex: 1;
+}
+
+.edlStageName {
+    font-family: var(--fontBody);
+    font-size: 9px;
+    letter-spacing: 2px;
+    font-weight: 600;
+    margin-bottom: 3px;
+    color: rgba(255, 255, 255, .35);
+    transition: color .4s;
+}
+
+.edlStage.stageActive .edlStageName {
+    color: var(--colorRed);
+}
+
+.edlStage.stageDone .edlStageName {
+    color: var(--colorGreen);
+}
+
+.edlStageDesc {
+    font-size: 10px;
+    color: rgba(255, 255, 255, .22);
+    letter-spacing: .3px;
+}
+
+.edlStageAlt {
+    font-family: var(--fontBody);
+    font-size: 9px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, .18);
+    text-align: right;
+    min-width: 58px;
+}
+
+.edlStageStatus {
+    font-size: 8px;
+    letter-spacing: 2px;
+    min-width: 68px;
+    text-align: right;
+    color: rgba(255, 255, 255, .18);
+    transition: color .4s;
+}
+
+.edlStage.stageActive .edlStageStatus {
+    color: var(--colorGold);
+    animation: animBlink .8s step-end infinite;
+}
+
+.edlStage.stageDone .edlStageStatus {
+    color: var(--colorGreen);
+}
+
+@keyframes animBlink {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0;
+    }
+}
+
+/* EDL Start Button */
+.edlStartBtn {
+    margin-top: 18px;
+    padding: 13px 38px;
+    font-family: var(--fontBody);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 4px;
+    background: rgba(255, 190, 0, .04);
+    border: 1px solid rgba(255, 190, 0, .2);
+    color: rgba(255, 190, 0, .7);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all .4s;
+}
+
+.edlStartBtn:hover:not(:disabled) {
+    background: rgba(255, 190, 0, .1);
+    box-shadow: 0 0 36px rgba(255, 190, 0, .15);
+    transform: translateY(-1px);
+}
+
+.edlStartBtn:disabled {
+    opacity: .3;
+    cursor: not-allowed;
+}
+
+/* SECTION 4 — EXPLORATION (Rover Game)
+ */
+#explorationSection::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse 80% 40% at 50% 90%, rgba(80, 18, 4, .35), transparent);
+}
+
+/* Rover arena container */
+.roverArena {
+    border-radius: 7px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, .06);
+    background: rgba(0, 0, 0, .45);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, .65), inset 0 1px 0 rgba(255, 255, 255, .04);
+}
+
+/* Mars surface viewport */
+.roverScreen {
+    height: 210px;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(175deg, #2c0a00 0%, #1a0500 45%, #0e0200 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, .045);
+}
+
+/* Sky gradient at the top of the screen */
+.roverSky {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 62%;
+    background: linear-gradient(to bottom, rgba(210, 80, 25, .13), rgba(140, 40, 10, .07), transparent);
+}
+
+/* Dust haze layer */
+.roverHaze {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 200% 80% at 50% 0%, rgba(180, 65, 18, .07), transparent 55%);
+}
+
+/* Horizon line */
+.roverHorizon {
+    position: absolute;
+    bottom: 40%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(255, 100, 30, .18), transparent);
+}
+
+/* Ground / terrain */
+.roverGround {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 42%;
+    background: linear-gradient(to bottom, #5a1e08, #3a1004, #1e0802);
+}
+
+.roverGround::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 10px;
+    background:
+        radial-gradient(ellipse 110% 100% at 40% 0%, rgba(110, 35, 12, .8), transparent),
+        radial-gradient(ellipse 70% 100% at 72% 0%, rgba(90, 28, 8, .8), transparent);
+}
+
+/* HUD overlay inside the rover screen */
+.roverScreenHud {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.roverHudChip {
+    background: rgba(0, 0, 0, .6);
+    border: 1px solid rgba(255, 255, 255, .07);
+    padding: 4px 10px;
+    border-radius: 3px;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    color: rgba(255, 255, 255, .3);
+    backdrop-filter: blur(8px);
+}
+
+.roverHudValue {
+    color: var(--colorCyan);
+    font-family: var(--fontBody);
+    font-weight: 600;
+}
+
+/* The rover emoji that moves left/right */
+.roverEmoji {
+    position: absolute;
+    bottom: 42%;
+    font-size: 26px;
+    transition: left .4s cubic-bezier(.23, 1, .32, 1);
+    filter: drop-shadow(0 4px 14px rgba(0, 0, 0, .7));
+}
+
+/* Collectible sample items on the surface */
+.collectItem {
+    position: absolute;
+    bottom: 43%;
+    font-size: 22px;
+    cursor: pointer;
+    animation: animItemBob 2.8s ease-in-out infinite;
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, .6));
+    transition: opacity .4s, transform .4s;
+}
+
+@keyframes animItemBob {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-5px);
+    }
+}
+
+.collectItem:hover {
+    filter: drop-shadow(0 0 14px rgba(255, 200, 0, .5)) drop-shadow(0 2px 8px rgba(0, 0, 0, .6));
+}
+
+/* Collected items fade out and shrink */
+.collectItem.collected {
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(.4) translateY(-20px);
+}
+
+/* Rover controls row */
+.roverControls {
+    padding: 15px 18px;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+    border-bottom: 1px solid rgba(255, 255, 255, .038);
+}
+
+.dpadWrap {
+    display: flex;
+    flex-direction: column;
+}
+
+.dpadLabel {
+    font-size: 7px;
+    letter-spacing: 2.5px;
+    color: rgba(255, 255, 255, .18);
+    margin-bottom: 8px;
+}
+
+/* D-pad button grid (3 columns × 2 rows) */
+.dpad {
+    display: grid;
+    grid-template-columns: repeat(3, 38px);
+    grid-template-rows: repeat(2, 38px);
+    gap: 4px;
+}
+
+.dpadBtn {
+    width: 38px;
+    height: 38px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, .025);
+    border: 1px solid rgba(255, 255, 255, .06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    color: rgba(255, 255, 255, .35);
+    transition: all .2s;
+    user-select: none;
+}
+
+.dpadBtn:hover,
+.dpadBtn:active {
+    background: rgba(232, 67, 26, .1);
+    border-color: rgba(232, 67, 26, .3);
+    color: #fff;
+    box-shadow: 0 0 14px rgba(232, 67, 26, .18);
+}
+
+.dpadBtn:active {
+    transform: scale(.88);
+}
+
+/* Center stop button */
+.dpadCenter {
+    border-color: rgba(232, 67, 26, .12);
+    color: rgba(232, 67, 26, .35);
+}
+
+/* Rover status bars */
+.roverStatBars {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+    min-width: 170px;
+}
+
+.roverStatRow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.roverStatLabel {
+    font-size: 8px;
+    letter-spacing: 2px;
+    color: rgba(255, 255, 255, .22);
+    min-width: 52px;
+}
+
+.roverStatTrack {
+    flex: 1;
+    height: 3px;
+    background: rgba(255, 255, 255, .05);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.roverStatFill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width .5s ease;
+}
+
+.roverStatValue {
+    font-family: var(--fontBody);
+    font-size: 9px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, .35);
+    min-width: 32px;
+    text-align: right;
+}
+
+/* Rover log message at the bottom */
+.roverLog {
+    padding: 10px 18px;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: rgba(0, 232, 136, .55);
+    line-height: 1.5;
+    min-height: 36px;
+    border-top: 1px solid rgba(255, 255, 255, .035);
+}
+
+/* Sample collection panel */
+.samplePanel {
+    border-radius: 5px;
+    padding: 16px;
+    margin-top: 12px;
+    background: rgba(255, 180, 0, .025);
+    border: 1px solid rgba(255, 180, 0, .09);
+}
+
+.samplePanelTitle {
+    font-size: 8px;
+    letter-spacing: 3px;
+    color: rgba(255, 180, 0, .38);
+    margin-bottom: 12px;
+}
+
+.sampleChips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* Individual collected sample chip */
+.sampleChip {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-family: var(--fontBody);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    border: 1px solid rgba(255, 255, 255, .07);
+    color: rgba(255, 255, 255, .22);
+    background: rgba(255, 255, 255, .02);
+    opacity: .35;
+    transform: scale(.9);
+    transition: all .5s cubic-bezier(.23, 1, .32, 1);
+}
+
+/* Lights up when sample is collected */
+.sampleChip.collected {
+    opacity: 1;
+    transform: scale(1);
+    border-color: rgba(255, 170, 0, .35);
+    color: rgba(255, 200, 80, .9);
+    background: rgba(255, 160, 0, .07);
+    box-shadow: 0 0 14px rgba(255, 160, 0, .1);
+}
+
+/* Mars planet stats grid */
+.marsStatsGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+}
+
+.marsStatCell {
+    padding: 13px;
+    border-radius: 5px;
+    background: rgba(255, 255, 255, .02);
+    border: 1px solid rgba(255, 255, 255, .045);
+}
+
+.marsStatLabel {
+    font-size: 7px;
+    letter-spacing: 2.5px;
+    color: rgba(255, 255, 255, .22);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+}
+
+.marsStatValue {
+    font-family: var(--fontBody);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: .5px;
+}
+
+/* Cyan gradient text for first row of stats */
+.marsStatValueCyan {
+    background: linear-gradient(135deg, #fff, var(--colorCyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Gold gradient text for second row of stats */
+.marsStatValueGold {
+    background: linear-gradient(135deg, #fff, var(--colorGold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Final mission complete card */
+.finalCard {
+    margin-top: 12px;
+    padding: 22px;
+    border-radius: 7px;
+    background: linear-gradient(135deg, rgba(232, 67, 26, .055), rgba(180, 30, 8, .02));
+    border: 1px solid rgba(232, 67, 26, .13);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .038);
+}
+
+.finalQuote {
+    font-family: var(--fontItalic);
+    font-size: clamp(16px, 1.8vw, 20px);
+    font-style: italic;
+    color: rgba(255, 255, 255, .4);
+    line-height: 1.85;
+    margin-bottom: 18px;
+}
+
+.restartBtn {
+    width: 100%;
+    padding: 12px;
+    background: rgba(232, 67, 26, .055);
+    border: 1px solid rgba(232, 67, 26, .18);
+    color: rgba(232, 67, 26, .65);
+    font-family: var(--fontBody);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 4px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all .4s;
+    text-transform: uppercase;
+}
+
+.restartBtn:hover {
+    background: rgba(232, 67, 26, .1);
+    box-shadow: 0 0 24px rgba(232, 67, 26, .12);
+    color: #fff;
+}
+
+/* ════════════════════════════════════════════════════════════
+SCROLL REVEAL ANIMATIONS
+fadeUp  = elements that fade in sliding up from below
+fadeLeft = elements that fade in sliding from the left
+Both start hidden; JS adds .visible class to trigger them
+   ════════════════════════════════════════════════════════════ */
+.fadeUp {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity .85s cubic-bezier(.23, 1, .32, 1),
+        transform .85s cubic-bezier(.23, 1, .32, 1);
+}
+
+.fadeLeft {
+    opacity: 0;
+    transform: translateX(-20px);
+    transition: opacity .85s cubic-bezier(.23, 1, .32, 1),
+        transform .85s cubic-bezier(.23, 1, .32, 1);
+}
+
+/* Triggered state */
+.fadeUp.visible,
+.fadeLeft.visible {
+    opacity: 1;
+    transform: none;
+}
+
+/* RESPONSIVE — TABLET & MOBILE
+ */
+@media (max-width: 900px) {
+    .pageSection {
+        padding: 68px 64px 40px;
+    }
+}
+
+@media (max-width: 640px) {
+    .pageSection {
+        padding: 66px 18px 36px;
+    }
+
+    /* Hide sidebars on small screens */
+    #leftNav,
+    #rightGauge {
+        display: none;
+    }
+
+    /* Hide third HUD stat on mobile */
+    .hudStatsGroup .hudStat:nth-child(3) {
+        display: none;
+    }
+
+    /* Hide rocket on small screens */
+    .rocketWrap {
+        display: none;
+    }
+
+    .hazardGrid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .marsGlobeWrap {
+        width: 150px;
+        height: 150px;
+    }
+
+    .dpad {
+        grid-template-columns: repeat(3, 34px);
+        grid-template-rows: repeat(2, 34px);
+    }
+
+    .dpadBtn {
+        width: 34px;
+        height: 34px;
+        font-size: 12px;
+    }
+
+    .marsStatsGrid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 400px) {
+
+    /* Hide second HUD stat on very small phones */
+    .hudStatsGroup .hudStat:nth-child(2) {
+        display: none;
+    }
+}
